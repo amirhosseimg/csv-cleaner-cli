@@ -12,6 +12,7 @@ def main() -> int:
     p.add_argument("--select", default=None, help="Comma-separated columns to keep (e.g. name,age,country)")
     p.add_argument("--where", default=None, help='Filter like: age>=18 or country=="Italy"')
     p.add_argument("--dropna", action="store_true", help="Drop rows with empty values in selected columns")
+    p.add_argument("--overwrite",action="store_true",help="Overwrite output file if it already exists",)
     p.add_argument("--delimiter", default=",", help="CSV delimiter (default: ,)")
 
     args = p.parse_args()
@@ -19,14 +20,16 @@ def main() -> int:
     select = parse_select(args.select)
     where = parse_where(args.where)
 
-    written = clean_csv(
-        input_path=Path(args.input),
-        output_path=Path(args.output),
-        select=select,
-        where=where,
-        dropna=args.dropna,
-        delimiter=args.delimiter,
-    )
+   written = clean_csv(
+    input_path=Path(args.input),
+    output_path=Path(args.output),
+    select=select,
+    where=where,
+    dropna=args.dropna,
+    delimiter=args.delimiter,
+    overwrite=args.overwrite,
+)
+
     print(f"[OK] Wrote {written} rows to {args.output}")
     return 0
 
