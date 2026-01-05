@@ -1,8 +1,8 @@
 from __future__ import annotations
+
 import csv
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -22,10 +22,11 @@ def parse_select(select: str | None) -> list[str] | None:
 def parse_where(where: str | None) -> WhereClause | None:
     """
     Supported operators: ==, !=, >=, <=, >, <
-    Example: age>=18   or   country==Italy
+    Example: age>=18   or   country=="Italy"
     """
     if not where:
         return None
+
     ops = ["==", "!=", ">=", "<=", ">", "<"]
     for op in ops:
         if op in where:
@@ -35,6 +36,7 @@ def parse_where(where: str | None) -> WhereClause | None:
             if not col:
                 raise ValueError("Invalid --where: missing column name")
             return WhereClause(column=col, op=op, value=val)
+
     raise ValueError("Invalid --where: operator not found (use ==, !=, >=, <=, >, <)")
 
 
@@ -46,11 +48,11 @@ def _to_number(s: str) -> float | None:
 
 
 def row_matches(row: dict[str, str], clause: WhereClause) -> bool:
-    raw = row.get(clause.column, "")
+    raw = (row.get(clause.column, "") or "").strip()
     left_num = _to_number(raw)
     right_num = _to_number(clause.value)
 
-    # numeric compare if both are numbers, else string compare
+    # Numeric compare if both are numbers, else string compare
     if left_num is not None and right_num is not None:
         a, b = left_num, right_num
     else:
@@ -69,6 +71,7 @@ def row_matches(row: dict[str, str], clause: WhereClause) -> bool:
         return a > b
     if op == "<":
         return a < b
+
     raise ValueError(f"Unsupported operator: {op}")
 
 
@@ -82,6 +85,8 @@ def clean_csv(
     overwrite: bool = False,
 ) -> int:
     """
+    Clean/filter CSV and write to output_path.
+
     Returns number of rows written (excluding header).
     """
     input_path = input_path.expanduser().resolve()
@@ -105,16 +110,20 @@ def clean_csv(
         else:
             out_fields = fieldnames
 
+        # Ensure output folder exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        if output_path.exists():
-    if overwrite:
-        output_path.unlink()
-    else:
-        raise FileExistsError(
-            f"Output file already exists: {output_path} "
-            "(use --overwrite to replace it)"
-        )
 
+        # Overwrite logic
+        if output_path.exists():
+            if overwrite:
+                output_path.unlink()
+            else:
+                raise FileExistsError(
+                    f"Output file already exists: {output_path} "
+                    "(use --overwrite to replace it)"
+                )
+
+        # Write output
         with output_path.open("w", newline="", encoding="utf-8") as f_out:
             writer = csv.DictWriter(f_out, fieldnames=out_fields, delimiter=delimiter)
             writer.writeheader()
@@ -122,8 +131,8 @@ def clean_csv(
             written = 0
             for row in reader:
                 if dropna:
-                    # drop rows where any selected output field is empty
-                    if any((row.get(c, "") or "").strip() == "" for c in out_fields):
+                    # Drop rows where any selected output field is empty
+                    if any(((row.get(c, "") or "").strip() == "") for c in out_fields):
                         continue
 
                 if where and not row_matches(row, where):
