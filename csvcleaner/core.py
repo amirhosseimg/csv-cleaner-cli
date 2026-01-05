@@ -79,6 +79,7 @@ def clean_csv(
     where: WhereClause | None = None,
     dropna: bool = False,
     delimiter: str = ",",
+    overwrite: bool = False,
 ) -> int:
     """
     Returns number of rows written (excluding header).
