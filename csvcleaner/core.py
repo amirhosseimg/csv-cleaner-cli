@@ -106,6 +106,15 @@ def clean_csv(
             out_fields = fieldnames
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        if output_path.exists():
+    if overwrite:
+        output_path.unlink()
+    else:
+        raise FileExistsError(
+            f"Output file already exists: {output_path} "
+            "(use --overwrite to replace it)"
+        )
+
         with output_path.open("w", newline="", encoding="utf-8") as f_out:
             writer = csv.DictWriter(f_out, fieldnames=out_fields, delimiter=delimiter)
             writer.writeheader()
